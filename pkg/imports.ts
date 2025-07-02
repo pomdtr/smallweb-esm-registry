@@ -1,4 +1,5 @@
-import { Project, SyntaxKind, Node, ImportDeclaration, ExportDeclaration, CallExpression, StringLiteral, NoSubstitutionTemplateLiteral, BinaryExpression, AwaitExpression, SourceFile } from 'ts-morph';
+import { Project, SyntaxKind, Node } from 'ts-morph';
+import type { ImportDeclaration, ExportDeclaration, CallExpression, StringLiteral, NoSubstitutionTemplateLiteral, BinaryExpression, AwaitExpression, SourceFile } from 'ts-morph';
 
 export class ImportRewriter {
     private project: Project;
