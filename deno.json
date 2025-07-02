@@ -5,6 +5,7 @@
         "@std/jsonc": "jsr:@std/jsonc@^1.0.2",
         "@std/path": "jsr:@std/path@^1.1.1",
         "hono": "npm:hono@^4.8.3",
-        "isomorphic-git": "npm:isomorphic-git@^1.32.1"
+        "isomorphic-git": "npm:isomorphic-git@^1.32.1",
+        "ts-morph": "npm:ts-morph@^26.0.0"
     }
 }
