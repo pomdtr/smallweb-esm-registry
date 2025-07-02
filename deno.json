@@ -1,6 +1,9 @@
 {
-    "exports": "./pkg/mod.ts",
+    "name": "@smallweb/esm",
+    "version": "0.0.1",
     "lock": false,
+    "exports": "./pkg/mod.ts",
+    "license": "MIT",
     "imports": {
         "@std/jsonc": "jsr:@std/jsonc@^1.0.2",
         "@std/path": "jsr:@std/path@^1.1.1",
