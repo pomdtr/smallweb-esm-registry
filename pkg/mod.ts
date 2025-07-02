@@ -1,14 +1,14 @@
-import { Hono } from "npm:hono"
-import { trimTrailingSlash } from 'npm:hono/trailing-slash'
-import { HTTPException } from "npm:hono/http-exception"
+import { Hono } from "hono"
+import { trimTrailingSlash } from 'hono/trailing-slash'
+import { HTTPException } from "hono/http-exception"
 
 
-import * as path from "jsr:@std/path"
+import * as path from "@std/path"
 import fs from "node:fs/promises"
 import { ImportRewriter } from "./imports.ts"
 
-import * as git from 'npm:isomorphic-git@1.32.1'
-import * as jsonc from "jsr:@std/jsonc";
+import * as git from 'isomorphic-git'
+import * as jsonc from "@std/jsonc";
 
 export type EsmRegistryOptions = {
     root: string
@@ -151,15 +151,10 @@ async function getFileContentAtCommit({ dir, oid, filepath }: { dir: string, oid
 
     // Step 2: Find the tree entry for the file
     const { tree } = commit.commit
-    const entry = await git.readTree({ fs, dir, oid: tree }).then(({ tree }) => {
-        // Recursively walk the tree to find the entry
-        for (const node of tree) {
-            if (node.path === filepath) {
-                return node
-            }
-        }
-        throw new Error('File not found in tree')
-    })
+    // Helper function to walk the tree recursively
+
+    const filepathParts = filepath.split('/')
+    const entry = await findEntryInTree({ fs, dir, oid: tree, filepathParts })
 
     // Step 3: Read the blob
     const { blob } = await git.readBlob({ fs, dir, oid: entry.oid })
@@ -168,3 +163,18 @@ async function getFileContentAtCommit({ dir, oid, filepath }: { dir: string, oid
     return new TextDecoder().decode(blob)
 }
 
+async function findEntryInTree({ fs, dir, oid, filepathParts }: { fs: any, dir: string, oid: string, filepathParts: string[] }): Promise<any> {
+    const { tree } = await git.readTree({ fs, dir, oid })
+    const [current, ...rest] = filepathParts
+    for (const node of tree) {
+        if (node.path === current) {
+            if (rest.length === 0) {
+                return node
+            }
+            if (node.type === 'tree') {
+                return findEntryInTree({ fs, dir, oid: node.oid, filepathParts: rest })
+            }
+        }
+    }
+    throw new Error('File not found in tree')
+}
