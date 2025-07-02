@@ -2,6 +2,7 @@ import { Hono } from "npm:hono"
 import { trimTrailingSlash } from 'npm:hono/trailing-slash'
 import { HTTPException } from "npm:hono/http-exception"
 
+
 import * as path from "jsr:@std/path"
 import fs from "node:fs/promises"
 import { ImportRewriter } from "./imports.ts"
@@ -112,6 +113,17 @@ function createServer(opts: EsmRegistryOptions) {
         })
 
         return c.text(rewriter.rewriteImports(code, params.filepath))
+    })
+
+    app.onError((err, c) => {
+        console.error('Error occurred:', err)
+
+        // Set appropriate status code and response
+        return c.json({
+            success: false,
+            message: err.message || 'Internal Server Error',
+            status: 500
+        }, 500)
     })
 
     return app
