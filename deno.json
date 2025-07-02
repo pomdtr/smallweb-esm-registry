@@ -1,0 +1,4 @@
+{
+    "exports": "./pkg/mod.ts",
+    "lock": false
+}
