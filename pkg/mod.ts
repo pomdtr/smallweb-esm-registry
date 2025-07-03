@@ -1,16 +1,15 @@
-import { Hono } from "hono"
-import { trimTrailingSlash } from 'hono/trailing-slash'
-import { HTTPException } from "hono/http-exception"
-
-
+import { contentType } from "@std/media-types"
+import * as jsonc from "@std/jsonc"
 import * as path from "@std/path"
+import { Hono } from "hono"
+import { HTTPException } from "hono/http-exception"
+import { trimTrailingSlash } from "hono/trailing-slash"
+import * as git from "isomorphic-git"
 import fs from "node:fs/promises"
+
 import { ImportRewriter } from "./imports.ts"
 
-import * as git from 'isomorphic-git'
-import * as jsonc from "@std/jsonc";
-
-export type EsmRegistryOptions = {
+export type RegistryOptions = {
     root: string
 }
 
@@ -19,10 +18,10 @@ type DenoConfig = {
     imports?: Record<string, string>
 }
 
-export class EsmRegistry {
+export class Registry {
     private server
 
-    constructor(opts: EsmRegistryOptions) {
+    constructor(opts: RegistryOptions) {
         this.server = createServer(opts);
     }
 
@@ -32,11 +31,12 @@ export class EsmRegistry {
 }
 
 
-function createServer(opts: EsmRegistryOptions) {
+function createServer(opts: RegistryOptions) {
     const app = new Hono()
 
     app.get("/", (c) => {
-        return c.text("Usage: /{app}@{ref}/{filepath}");
+        const url = new URL(c.req.url)
+        return c.text(`Usage: ${url.origin}/{app}@{ref}/{filepath}`);
     })
 
     app.use(trimTrailingSlash())
@@ -104,15 +104,25 @@ function createServer(opts: EsmRegistryOptions) {
                 return c.redirect(path.join("/", `${app}@${oid.slice(0, 7)}`, config.exports[key]));
             }
         }
-
-        const rewriter = new ImportRewriter(config.imports || {})
-        const code = await getFileContentAtCommit({
+        const blob = await getFileContentAtCommit({
             dir,
             oid,
             filepath: params.filepath
         })
 
-        return c.text(rewriter.rewriteImports(code, params.filepath))
+
+        const extname = path.extname(params.filepath)
+        if ([".js", ".ts", ".jsx", ".tsx"].includes(extname)) {
+            const code = new TextDecoder().decode(blob)
+            const rewriter = new ImportRewriter(config.imports || {})
+            return c.text(rewriter.rewriteImports(code, params.filepath))
+        }
+
+        return c.body(blob, {
+            headers: {
+                "Content-Type": contentType(extname) || "application/octet-stream",
+            }
+        })
     })
 
     app.onError((err, c) => {
@@ -130,11 +140,12 @@ function createServer(opts: EsmRegistryOptions) {
 }
 
 async function getConfig({ dir, oid }: { dir: string, oid: string }): Promise<DenoConfig> {
-    for (const manifestPath of ["deno.json", "deno.jsonc"]) {
+    for (const filepath of ["deno.json", "deno.jsonc"]) {
         try {
-            const manifestText = await getFileContentAtCommit({ dir, oid, filepath: manifestPath })
+            const blob = await getFileContentAtCommit({ dir, oid, filepath })
 
-            const manifest = await jsonc.parse(manifestText)
+            const text = new TextDecoder().decode(blob)
+            const manifest = await jsonc.parse(text)
             return manifest as DenoConfig
         } catch (_e) {
             continue
@@ -144,7 +155,7 @@ async function getConfig({ dir, oid }: { dir: string, oid: string }): Promise<De
     return {}
 }
 
-async function getFileContentAtCommit({ dir, oid, filepath }: { dir: string, oid: string, filepath: string }): Promise<string> {
+async function getFileContentAtCommit({ dir, oid, filepath }: { dir: string, oid: string, filepath: string }) {
     // Step 1: Resolve the commit object
 
     const commit = await git.readCommit({ fs, dir, oid })
@@ -159,11 +170,10 @@ async function getFileContentAtCommit({ dir, oid, filepath }: { dir: string, oid
     // Step 3: Read the blob
     const { blob } = await git.readBlob({ fs, dir, oid: entry.oid })
 
-    // Step 4: Convert blob to string
-    return new TextDecoder().decode(blob)
+    return blob
 }
 
-async function findEntryInTree({ fs, dir, oid, filepathParts }: { fs: any, dir: string, oid: string, filepathParts: string[] }): Promise<any> {
+async function findEntryInTree({ fs, dir, oid, filepathParts }: { fs: git.FsClient, dir: string, oid: string, filepathParts: string[] }) {
     const { tree } = await git.readTree({ fs, dir, oid })
     const [current, ...rest] = filepathParts
     for (const node of tree) {
