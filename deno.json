@@ -1,6 +1,6 @@
 {
-    "name": "@smallweb/esm",
-    "version": "0.1.0",
+    "name": "@smallweb/registry",
+    "version": "0.1.1",
     "lock": false,
     "exports": "./pkg/mod.ts",
     "license": "MIT",

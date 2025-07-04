@@ -59,16 +59,24 @@ function createServer(opts: RegistryOptions) {
         }
 
         const config = await getConfig({ dir, oid })
-        if (!config.exports) {
-            throw new HTTPException(404, { message: `No exports found for ${app} at ${ref}` })
+        if (config.exports) {
+            if (typeof config.exports === "string") {
+                return c.redirect(path.join("/", `${app}@${oid.slice(0, 7)}`, config.exports));
+            }
+
+            if ("." in config.exports) {
+                return c.redirect(path.join("/", `${app}@${oid.slice(0, 7)}`, config.exports["."]));
+            }
         }
 
-        if (typeof config.exports === "string") {
-            return c.redirect(path.join("/", `${app}@${oid.slice(0, 7)}`, config.exports));
-        }
-
-        if ("." in config.exports) {
-            return c.redirect(path.join("/", `${app}@${oid.slice(0, 7)}`, config.exports["."]));
+        const entrypoints = ["mod.js", "mod.ts", "mod.jsx", "mod.tsx", "main.js", "main.ts", "main.jsx", "main.tsx"]
+        for (const mainFile of entrypoints) {
+            try {
+                await findEntryInTree({ dir, fs, oid, filepathParts: [mainFile] })
+                return c.redirect(path.join("/", `${app}@${oid.slice(0, 7)}`, mainFile));
+            } catch (_e) {
+                continue
+            }
         }
 
         throw new HTTPException(404, { message: `No default export found for ${app} at ${ref}` })
