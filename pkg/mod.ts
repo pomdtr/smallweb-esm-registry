@@ -40,6 +40,11 @@ function createServer(opts: RegistryOptions) {
     })
 
     app.use(trimTrailingSlash())
+    app.get("/favicon.ico", () => {
+        return new Response("Not Found", {
+            status: 404,
+        })
+    })
     app.get("/:app", async (c) => {
         const params = c.req.param()
         let app: string, ref: string
@@ -134,8 +139,6 @@ function createServer(opts: RegistryOptions) {
     })
 
     app.onError((err, c) => {
-        console.error('Error occurred:', err)
-
         // Set appropriate status code and response
         return c.json({
             success: false,

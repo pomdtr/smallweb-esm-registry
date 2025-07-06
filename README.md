@@ -36,4 +36,6 @@ To add one app to the registry, just run `git init -b main` in the app directory
 
 Each revision of a file will be available at `https://esm.<your-domain>/<app-name>@<commit-hash>/<file-path>`.
 
+Since I develop this registry from my smallweb instance, it can even be used to host itself! You can find it's source code at <https://esm.smallweb.run/esm>.
+
 `@smallweb/esm` automatically resolves the `imports` / `exports` fields from your `deno.json` file, so you can keep your app's dependencies organized.
