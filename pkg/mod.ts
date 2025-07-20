@@ -19,7 +19,7 @@ type DenoConfig = {
   imports?: Record<string, string>;
 };
 
-export class EsmRegistry {
+export class Registry {
   private server;
 
   constructor(opts: RegistryOptions) {
