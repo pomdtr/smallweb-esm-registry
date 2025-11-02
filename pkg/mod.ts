@@ -1,9 +1,9 @@
 import * as jsonc from "@std/jsonc";
 import { contentType } from "@std/media-types";
 import * as path from "@std/path";
-import { Hono } from "hono";
-import { HTTPException } from "hono/http-exception";
-import { trimTrailingSlash } from "hono/trailing-slash";
+import { Hono } from "@hono/hono";
+import { HTTPException } from "@hono/hono/http-exception";
+import { trimTrailingSlash } from "@hono/hono/trailing-slash";
 import * as git from "isomorphic-git";
 import fs from "node:fs/promises";
 
@@ -19,9 +19,6 @@ type DenoConfig = {
   imports?: Record<string, string>;
 };
 
-type SmallwebConfig = {
-  root?: string;
-}
 
 export class Registry {
   private server;
@@ -152,7 +149,9 @@ function createServer(opts: RegistryOptions) {
       return c.text(rewriter.rewriteImports(code, params.filepath));
     }
 
-    return c.body(blob, {
+
+    // @ts-ignore typing issue for blob
+    return new Response(blob, {
       headers: {
         "Content-Type": contentType(extname) || "application/octet-stream",
       },
