@@ -19,6 +19,10 @@ type DenoConfig = {
   imports?: Record<string, string>;
 };
 
+type SmallwebConfig = {
+  root?: string;
+}
+
 export class Registry {
   private server;
 
@@ -63,7 +67,7 @@ function createServer(opts: RegistryOptions) {
       oid = await git.expandOid({ fs, dir, oid: ref });
     }
 
-    const config = await getConfig({ dir, oid });
+    const config = await getDenoConfig({ dir, oid });
     if (config.exports) {
       if (typeof config.exports === "string") {
         return c.redirect(
@@ -126,7 +130,7 @@ function createServer(opts: RegistryOptions) {
       return c.redirect(`/${app}@${oid.slice(0, 7)}/${params.filepath}`);
     }
 
-    const config = await getConfig({ dir, oid });
+    const config = await getDenoConfig({ dir, oid });
     if (config.exports && typeof config.exports === "object") {
       const key = `./${params.filepath}`;
       if (key in config.exports) {
@@ -167,7 +171,7 @@ function createServer(opts: RegistryOptions) {
   return app;
 }
 
-async function getConfig(
+async function getDenoConfig(
   { dir, oid }: { dir: string; oid: string },
 ): Promise<DenoConfig> {
   for (const filepath of ["deno.json", "deno.jsonc"]) {
@@ -184,6 +188,7 @@ async function getConfig(
 
   return {};
 }
+
 
 async function getFileContentAtCommit(
   { dir, oid, filepath }: { dir: string; oid: string; filepath: string },
